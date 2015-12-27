@@ -1,0 +1,68 @@
+diff -r c98bd523e5f9 src/share/classes/sun/nio/ch/Util.java
+--- a/src/share/classes/sun/nio/ch/Util.java	Fri Dec 04 15:52:11 2015 +0000
++++ b/src/share/classes/sun/nio/ch/Util.java	Sat Dec 26 11:11:23 2015 -0500
+@@ -47,16 +47,6 @@
+     // The number of temp buffers in our pool
+     private static final int TEMP_BUF_POOL_SIZE = IOUtil.IOV_MAX;
+ 
+-    // Per-thread cache of temporary direct buffers
+-    private static ThreadLocal<BufferCache> bufferCache =
+-        new ThreadLocal<BufferCache>()
+-    {
+-        @Override
+-        protected BufferCache initialValue() {
+-            return new BufferCache();
+-        }
+-    };
+-
+     /**
+      * A simple cache of direct buffers.
+      */
+@@ -159,20 +149,7 @@
+      * Returns a temporary buffer of at least the given size
+      */
+     public static ByteBuffer getTemporaryDirectBuffer(int size) {
+-        BufferCache cache = bufferCache.get();
+-        ByteBuffer buf = cache.get(size);
+-        if (buf != null) {
+-            return buf;
+-        } else {
+-            // No suitable buffer in the cache so we need to allocate a new
+-            // one. To avoid the cache growing then we remove the first
+-            // buffer from the cache and free it.
+-            if (!cache.isEmpty()) {
+-                buf = cache.removeFirst();
+-                free(buf);
+-            }
+-            return ByteBuffer.allocateDirect(size);
+-        }
++        return ByteBuffer.allocateDirect(size);
+     }
+ 
+     /**
+@@ -189,11 +166,7 @@
+      */
+     static void offerFirstTemporaryDirectBuffer(ByteBuffer buf) {
+         assert buf != null;
+-        BufferCache cache = bufferCache.get();
+-        if (!cache.offerFirst(buf)) {
+-            // cache is full
+-            free(buf);
+-        }
++        free(buf);
+     }
+ 
+     /**
+@@ -204,11 +177,7 @@
+      */
+     static void offerLastTemporaryDirectBuffer(ByteBuffer buf) {
+         assert buf != null;
+-        BufferCache cache = bufferCache.get();
+-        if (!cache.offerLast(buf)) {
+-            // cache is full
+-            free(buf);
+-        }
++        free(buf);
+     }
+ 
+     /**
