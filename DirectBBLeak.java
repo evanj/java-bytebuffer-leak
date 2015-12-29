@@ -87,6 +87,15 @@ public class DirectBBLeak extends Thread {
     }
   }
 
+  static private void collectAndPrintUsage(TestArguments args) throws InterruptedException {
+    args.printUsage();
+    System.gc();
+    // Sleep so direct ByteBuffer finalizers run. System.runFinalization is not sufficient
+    Thread.sleep(100);
+    System.out.println("After System.gc() and Thread.sleep(100):\n");
+    args.printUsage();
+  }
+
   static private void runTest(TestArguments args) throws InterruptedException, BrokenBarrierException {
     System.out.println("Before threads started:");
     args.printUsage();
@@ -99,25 +108,15 @@ public class DirectBBLeak extends Thread {
     }
 
     doneExit.await();
-    System.out.println("All threads have written; before System.GC():");
-    args.printUsage();
-
-    // Sleep to attempt to get finalizers to run and free native memory
-    System.gc();
-    Thread.sleep(100);
-    System.out.println("After System.GC() and Thread.sleep(100):");
-    args.printUsage();
+    System.out.println("All threads have written; before System.gc():");
+    collectAndPrintUsage(args);
 
     doneExit.await();
     for (int i = 0; i < threads.length; i++) {
       threads[i].join();
     }
     System.out.println("After threads exited:");
-    args.printUsage();
-    System.gc();
-    Thread.sleep(100);
-    System.out.println("After System.GC() and Thread.sleep(100):");
-    args.printUsage();
+    collectAndPrintUsage(args);
   }
 
   static public void main(String[] arguments) throws BrokenBarrierException, IOException, InterruptedException {
